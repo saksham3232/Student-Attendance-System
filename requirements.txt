@@ -1,0 +1,6 @@
+Django
+Pillow
+python-decouple
+numpy
+django-crispy-forms
+django-widget-tweaks

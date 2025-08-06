@@ -1,0 +1,218 @@
+{% extends 'attendance/base.html' %}
+
+{% block title %}Dashboard - Attendance System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()" aria-label="Refresh dashboard">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+.stats-card {
+    padding: 1rem;
+    border-radius: .5rem;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+.stats-card .stats-number {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0;
+}
+.clickable-card { cursor: pointer; }
+.clickable-card:hover { transform: translateY(-3px); transition: .15s ease; }
+</style>
+
+<!-- Statistics Cards -->
+<div class="row mb-4 g-3">
+    <div class="col-xl-3 col-md-6">
+        <a href="{% url 'student_list' %}" class="text-decoration-none" aria-label="View students list">
+            <div class="stats-card clickable-card">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="stats-number text-dark">{{ total_students }}</p>
+                        <p style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 0;">Total Students</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-2x opacity-75 text-secondary"></i>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <a href="{% url 'mark_attendance' %}" class="text-decoration-none" aria-label="Mark attendance">
+            <div class="stats-card bg-success text-white clickable-card">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="stats-number">{{ present_today }}</p>
+                        <p style="font-size: 0.9rem; opacity: 0.95; margin-bottom: 0;">Present Today</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-user-check fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        {# Attendance rate card — color set inline (no {% set %}) #}
+        <div class="stats-card clickable-card" title="Overall attendance rate">
+            <div class="d-flex">
+                <div class="flex-grow-1">
+                    <p class="stats-number">
+                        <span class="{% if attendance_percentage >= 75 %}text-success{% elif attendance_percentage >= 50 %}text-warning{% else %}text-danger{% endif %}">
+                            {{ attendance_percentage }}%
+                        </span>
+                    </p>
+                    <p style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 0;">Attendance Rate</p>
+                </div>
+                <div class="align-self-center">
+                    <i class="fas fa-chart-line fa-2x opacity-75"></i>
+                </div>
+            </div>
+            {# Optional colored footer bar for stronger visual cue #}
+            <div class="mt-2" style="height:6px; border-radius:4px; overflow:hidden;">
+                <div style="height:100%;
+                    {% if attendance_percentage >= 75 %}background:#198754;
+                    {% elif attendance_percentage >= 50 %}background:#ffc107;
+                    {% else %}background:#dc3545;
+                    {% endif %} width:100%;">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <a href="{% url 'holiday_management' %}" class="text-decoration-none" aria-label="Manage holidays">
+            <div class="stats-card bg-info text-white clickable-card">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="stats-number">{{ upcoming_holidays.count }}</p>
+                        <p style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 0;">Upcoming Holidays</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-calendar-alt fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- Recent Attendance -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-clock"></i> Today's Attendance</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_attendance %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Time In</th>
+                                <th>Status</th>
+                                <th>Marked By</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for attendance in recent_attendance %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if attendance.student.photo %}
+                                        <img src="{{ attendance.student.photo.url }}" 
+                                             class="rounded-circle me-2" 
+                                             width="32" height="32" alt="{{ attendance.student.name }}">
+                                        {% endif %}
+                                        <div>
+                                            <strong>{{ attendance.student.name }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ attendance.student.student_id }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if attendance.time_in %}
+                                        {{ attendance.time_in|time:"H:i" }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge 
+                                        {% if attendance.status == 'present' %}bg-success
+                                        {% elif attendance.status == 'absent' %}bg-danger
+                                        {% else %}bg-warning{% endif %}">
+                                        {{ attendance.status|title }}
+                                    </span>
+                                </td>
+                                <td>{{ attendance.marked_by.name }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No attendance records for today yet.</p>
+                    <a href="{% url 'mark_attendance' %}" class="btn btn-primary">
+                        <i class="fas fa-clipboard-check"></i> Start Marking Attendance
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'mark_attendance' %}" class="btn btn-primary w-100" role="button" aria-label="Mark attendance">
+                            <i class="fas fa-clipboard-check"></i><br>Mark Attendance
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'student_create' %}" class="btn btn-success w-100" role="button" aria-label="Add student">
+                            <i class="fas fa-user-plus"></i><br>Add Student
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'holiday_management' %}" class="btn btn-warning w-100" role="button" aria-label="Manage holidays">
+                            <i class="fas fa-calendar-alt"></i><br>Manage Holidays
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'attendance_report' %}" class="btn btn-info w-100" role="button" aria-label="View attendance reports">
+                            <i class="fas fa-chart-bar"></i><br>View Reports
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

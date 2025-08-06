@@ -1,0 +1,97 @@
+{% extends 'attendance/base.html' %}
+
+{% block title %}Students - Attendance System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-users"></i> Students Management</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% url 'student_create' %}" class="btn btn-success">
+            <i class="fas fa-plus"></i> Add Student
+        </a>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-list"></i> Students List</h5>
+    </div>
+    <div class="card-body">
+        {% if students %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">Photo</th>
+                        <th scope="col">Student ID</th>
+                        <th scope="col">Name</th>
+                        <th scope="col" class="d-none d-md-table-cell">Email</th>
+                        <th scope="col" class="d-none d-md-table-cell">Phone</th>
+                        <th scope="col">Attendance</th>
+                        <th scope="col" class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr>
+                        <td>
+                            {% if student.photo %}
+                                <img src="{{ student.photo.url }}" alt="{{ student.name }}" class="rounded-circle" width="50" height="50">
+                            {% else %}
+                                <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" style="width:50px;height:50px;">
+                                    <span class="text-white fw-bold">{{ student.name|slice:":1" }}</span>
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td><strong>{{ student.student_id }}</strong></td>
+                        <td>{{ student.name }}</td>
+                        <td class="d-none d-md-table-cell">{{ student.email }}</td>
+                        <td class="d-none d-md-table-cell">{{ student.phone }}</td>
+                        <td>
+                            <div class="progress" style="height: 18px;">
+                                <div
+                                    class="progress-bar
+                                    {% if student.attendance_percentage >= 75 %}
+                                        bg-success
+                                    {% elif student.attendance_percentage >= 50 %}
+                                        bg-warning
+                                    {% else %}
+                                        bg-danger
+                                    {% endif %}"
+                                    role="progressbar"
+                                    style="width: {{ student.attendance_percentage }}%;"
+                                    aria-valuenow="{{ student.attendance_percentage }}"
+                                    aria-valuemin="0" aria-valuemax="100">
+                                    {{ student.attendance_percentage }}%
+                                </div>
+                            </div>
+                            <small class="text-muted">{{ student.present_days }}/{{ student.total_days }} days</small>
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{% url 'student_update' student.pk %}" class="btn btn-outline-primary" title="Edit Student" aria-label="Edit {{ student.name }}">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'student_delete' student.pk %}" class="btn btn-outline-danger" title="Deactivate Student" aria-label="Deactivate {{ student.name }}" onclick="return confirm('Are you sure you want to deactivate {{ student.name }}?');">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+            <h5>No students found</h5>
+            <p class="text-muted">Start by adding your first student to the system.</p>
+            <a href="{% url 'student_create' %}" class="btn btn-success">
+                <i class="fas fa-plus"></i> Add First Student
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

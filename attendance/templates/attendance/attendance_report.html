@@ -1,0 +1,148 @@
+{% extends 'attendance/base.html' %}
+{% load static %}
+
+{% block title %}Attendance Reports - Attendance System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-chart-bar"></i> Attendance Reports</h1>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label" for="start-date">Start Date</label>
+                {# Use default_if_none so empty string from GET is preserved (not replaced by context) #}
+                <input type="date" id="start-date" class="form-control" name="start_date"
+                    value="{% if request.GET.start_date %}{{ request.GET.start_date }}{% else %}{{ start_date|date:'Y-m-d' }}{% endif %}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="end-date">End Date</label>
+                <input type="date" id="end-date" class="form-control" name="end_date"
+                    value="{% if request.GET.end_date %}{{ request.GET.end_date }}{% else %}{{ end_date|date:'Y-m-d' }}{% endif %}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label d-none d-md-block">&nbsp;</label>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-file-alt me-1"></i> Generate Report
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5><i class="fas fa-table"></i> Attendance Report 
+            ({{ start_date|date:"M d, Y" }} - {{ end_date|date:"M d, Y" }})
+        </h5>
+        <small class="text-muted">
+            Total Working Days: {{ total_working_days|default:"0" }}
+        </small>
+    </div>
+    <div class="card-body">
+        {% if report_data %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">Student</th>
+                        <th scope="col">Present Days</th>
+                        <th scope="col">Absent Days</th>
+                        <th scope="col">Attendance %</th>
+                        <th scope="col">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for data in report_data %}
+                    <tr>
+                        <td>
+                            <strong>{{ data.student.name }}</strong><br>
+                            <small class="text-muted">{{ data.student.student_id }}</small>
+                        </td>
+                        <td>{{ data.present_days }}</td>
+                        <td>{{ data.absent_days }}</td>
+                        <td style="min-width: 220px;">
+                            {% if total_working_days > 0 %}
+                                {% with pct_display=data.attendance_percentage|floatformat:0 %}
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div style="flex:1;">
+                                            <div class="progress" style="height: 18px;">
+                                                <div class="progress-bar
+                                                    {% if data.attendance_percentage >= 75 %}bg-success
+                                                    {% elif data.attendance_percentage >= 50 %}bg-warning
+                                                    {% else %}bg-danger{% endif %}"
+                                                    role="progressbar"
+                                                    style="width: {{ pct_display }}%;"
+                                                    aria-valuenow="{{ pct_display }}" aria-valuemin="0" aria-valuemax="100">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {# Percentage label outside the bar, color-coded #}
+                                        <div style="width: 60px; text-align: right;">
+                                            {% if data.attendance_percentage >= 75 %}
+                                                <span class="fw-bold text-success">{{ pct_display }}%</span>
+                                            {% elif data.attendance_percentage >= 50 %}
+                                                <span class="fw-bold text-warning" style="color:#6c6c00;">{{ pct_display }}%</span>
+                                            {% else %}
+                                                <span class="fw-bold text-danger">{{ pct_display }}%</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endwith %}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if data.attendance_percentage >= 75 %}
+                                <span class="badge bg-success">Good</span>
+                            {% elif data.attendance_percentage >= 50 %}
+                                <span class="badge bg-warning text-dark">Average</span>
+                            {% else %}
+                                <span class="badge bg-danger">Poor</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+            <p class="text-muted">No data available for the selected date range.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{# JavaScript auto-fill: fills date inputs with today's date only when server didn't provide one #}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    function getTodayStr() {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }
+
+    // Locate inputs
+    const startInput = document.getElementById("start-date");
+    const endInput = document.getElementById("end-date");
+    const todayStr = getTodayStr();
+
+    // Only set today's date when the input has no value (empty string)
+    // This ensures manual values from GET params are respected.
+    if (startInput && (startInput.value === "" || startInput.value === undefined || startInput.value === null)) {
+        startInput.value = todayStr;
+    }
+    if (endInput && (endInput.value === "" || endInput.value === undefined || endInput.value === null)) {
+        endInput.value = todayStr;
+    }
+});
+</script>
+{% endblock %}
