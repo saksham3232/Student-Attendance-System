@@ -161,5 +161,4 @@ For issues and questions:
 ---
 
 ## License
-
 This project is for educational purposes. You may modify and distribute it.
