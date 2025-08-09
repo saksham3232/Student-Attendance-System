@@ -1,4 +1,4 @@
-# Django Student Attendance ManagementSystem
+# Django Student Attendance Management System
 
 A comprehensive web-based attendance management system built with **Django**.
 
